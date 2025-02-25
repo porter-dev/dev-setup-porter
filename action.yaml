@@ -21,20 +21,23 @@ runs:
         repository: porter-dev/code
         ref: ${{ inputs.private_branch }}
         token: ${{ inputs.token }}
-        path: legacy-backend
+        path: code
       
     - name: Build Porter CLI
       shell: bash
-      working-directory: legacy-backend
+      working-directory: code/legacy-backend
       run: |
         echo "Building Porter CLI from branch ${{ inputs.private_branch }}"
-        go build -o porter cli/main.go
+        # Ensure we have the dependencies
+        go mod download
+        # Build the CLI
+        go build -o porter ./cli/main.go
         
     - name: Make Porter CLI available in PATH
       shell: bash
       run: |
         echo "Making Porter CLI available in PATH"
         mkdir -p $GITHUB_WORKSPACE/bin
-        cp legacy-backend/porter $GITHUB_WORKSPACE/bin/
+        cp code/legacy-backend/porter $GITHUB_WORKSPACE/bin/
         echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
         chmod +x $GITHUB_WORKSPACE/bin/porter
