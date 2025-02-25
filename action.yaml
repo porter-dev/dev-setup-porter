@@ -6,8 +6,7 @@ inputs:
     required: true
   version:
     description: 'Tag of the Porter CLI release to install (can be any valid tag format)'
-    required: false
-    default: 'latest'
+    required: true
 
 
 branding:
