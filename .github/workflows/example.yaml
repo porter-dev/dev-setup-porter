@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install Porter CLI
-        uses: action.yaml  # Replace with your action's repository
+        uses: porter-dev/dev-setup-porter@v0.1.0  # Replace with your action's repository
         with:
           token: ${{ secrets.PORTER_DEV_CODE_RELEASES_TOKEN }}  # or a more specific PAT with repo scope
           version: 'dgtown-test-cli'  # Specify the release version
