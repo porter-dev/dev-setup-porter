@@ -1,47 +1,47 @@
-name: 'Porter CLI Builder'
-description: 'Checkout and build the Porter CLI from the legacy backend repository'
+name: 'Porter CLI Installer'
+description: 'Install the Porter CLI from a private repository release'
 inputs:
-  private_branch:
-    description: 'The branch to checkout from the private repository'
-    required: true
   token:
     description: 'GitHub Personal Access Token with access to the private repository'
     required: true
+  version:
+    description: 'Tag of the Porter CLI release to install (can be any valid tag format)'
+    required: false
+    default: 'latest'
+
 
 branding:
   color: 'blue'
-  icon: 'lock'
+  icon: 'download'
 
 runs:
   using: 'composite'
   steps:
-    - name: Checkout private repository
-      uses: actions/checkout@v3
-      with:
-        repository: porter-dev/code
-        ref: ${{ inputs.private_branch }}
-        token: ${{ inputs.token }}
-        path: code
-      
-    - name: Build Porter CLI
-      shell: bash
-      working-directory: code/legacy-backend
-      run: |
-        echo "Building Porter CLI from branch ${{ inputs.private_branch }}"
-        # Use build caching
-        go env -w GOCACHE=/tmp/go-cache
-        
-        # Download dependencies with higher concurrency
-        go mod download -x
-
-        # Build with optimizations
-        go build -v -o porter -ldflags="-s -w" -trimpath ./cli/main.go
-        
-    - name: Make Porter CLI available in PATH
+    - name: Download Porter CLI from private release
       shell: bash
       run: |
-        echo "Making Porter CLI available in PATH"
+        echo "Downloading Porter CLI ${{ inputs.version }} from porter-dev/code"
+        
+        # Create a temporary directory for download
+        TEMP_DIR=$(mktemp -d)
+        
+        # Download the binary using curl with authentication
+        curl -L \
+          -H "Authorization: token ${{ inputs.token }}" \
+          -H "Accept: application/octet-stream" \
+          --output "$TEMP_DIR/porter" \
+          "https://api.github.com/repos/porter-dev/code/releases/assets/$(curl -s -H "Authorization: token ${{ inputs.token }}" "https://api.github.com/repos/porter-dev/code/releases/tags/${{ inputs.version }}" | jq -r '.assets[] | select(.name=="porter") | .id')"
+        
+        # Make the binary executable
+        chmod +x "$TEMP_DIR/porter"
+        
+        # Make Porter CLI available in PATH
         mkdir -p $GITHUB_WORKSPACE/bin
-        cp code/legacy-backend/porter $GITHUB_WORKSPACE/bin/
+        mv "$TEMP_DIR/porter" $GITHUB_WORKSPACE/bin/
         echo "$GITHUB_WORKSPACE/bin" >> $GITHUB_PATH
-        chmod +x $GITHUB_WORKSPACE/bin/porter
+        
+        # Clean up
+        rm -rf "$TEMP_DIR"
+        
+        # Verify installation
+        echo "Porter CLI installed successfully"
