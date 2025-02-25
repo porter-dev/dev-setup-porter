@@ -1,29 +1,26 @@
 name: Use Porter CLI
-
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
-
 jobs:
   use-porter:
     runs-on: ubuntu-latest
     steps:
+      # First, check out the repository
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      # Now you can use a local path (relative to repository root)
       - name: Install Porter CLI
-        uses: ../actions/action.yaml  # Replace with your action's repository
+        uses: ./actions/action.yaml
         with:
-          token: ${{ secrets.PORTER_DEV_CODE_RELEASES_TOKEN }}  # or a more specific PAT with repo scope
-          version: 'dgtown-test-cli'  # Specify the release version
+          token: ${{ secrets.PORTER_DEV_CODE_RELEASES_TOKEN }}
+          version: 'dgtown-test-cli'
       
       # Now you can use the Porter CLI in subsequent steps
       - name: Verify Porter installation
         run: |
           porter version
-      
-      # Example of using Porter in your workflow
-      - name: Use Porter
-        run: |
-          # Your commands using the Porter CLI
-          porter help
