@@ -28,10 +28,14 @@ runs:
       working-directory: code/legacy-backend
       run: |
         echo "Building Porter CLI from branch ${{ inputs.private_branch }}"
-        # Ensure we have the dependencies
-        go mod download
-        # Build the CLI
-        go build -o porter ./cli/main.go
+        # Use build caching
+        go env -w GOCACHE=/tmp/go-cache
+        
+        # Download dependencies with higher concurrency
+        go mod download -x
+
+        # Build with optimizations
+        go build -v -o porter -ldflags="-s -w" -trimpath ./cli/main.go
         
     - name: Make Porter CLI available in PATH
       shell: bash
