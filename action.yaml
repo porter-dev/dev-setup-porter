@@ -6,7 +6,8 @@ inputs:
     required: true
   version:
     description: 'Tag of the Porter CLI release to install (can be any valid tag format)'
-    required: true
+    required: false
+    default: 'latest'
 
 
 branding:
@@ -24,12 +25,21 @@ runs:
         # Create a temporary directory for download
         TEMP_DIR=$(mktemp -d)
         
-        # Download the binary using curl with authentication
+        # Get the release ID associated with the tag
+        RELEASE_ID=$(curl -s -H "Authorization: token ${{ inputs.token }}" \
+          "https://api.github.com/repos/porter-dev/code/releases/tags/${{ inputs.version }}" | \
+          jq -r '.id')
+        
+        # Download the binary directly by tag and filename
         curl -L \
           -H "Authorization: token ${{ inputs.token }}" \
           -H "Accept: application/octet-stream" \
           --output "$TEMP_DIR/porter" \
-          "https://api.github.com/repos/porter-dev/code/releases/assets/$(curl -s -H "Authorization: token ${{ inputs.token }}" "https://api.github.com/repos/porter-dev/code/releases/tags/${{ inputs.version }}" | jq -r '.assets[] | select(.name=="porter") | .id')"
+          "https://api.github.com/repos/porter-dev/code/releases/$RELEASE_ID/assets?name=porter" | \
+          jq -r '.[0].browser_download_url' | \
+          xargs curl -L -H "Authorization: token ${{ inputs.token }}" \
+          -H "Accept: application/octet-stream" \
+          --output "$TEMP_DIR/porter"
         
         # Make the binary executable
         chmod +x "$TEMP_DIR/porter"
